@@ -62,7 +62,7 @@ def add_disc(request):
             owner.save()
 
             for track_id in data['track_ids'].split(","):
-                if(track_id == ''):
+                if not track_id:
                     continue
                 try:
                     cd.tracks.add(track_id)
@@ -93,17 +93,17 @@ def suggest(request):
     dbc = db.cursor()
     inp = request.POST['input']
 
-    if(inp.isdigit() and len(inp) >= 8):
+    if inp.isdigit() and len(inp) >= 8:
         results = dbc.execute("SELECT id, artist, title FROM discogs WHERE barcode = %s GROUP BY artist, title", (inp,))
     else:
         results = dbc.execute("SELECT id, artist, title FROM discogs WHERE MATCH(artist, title) AGAINST (%s IN BOOLEAN MODE) GROUP BY artist, title", (request.POST['input'],))
 
-    if(results > 20):
+    if results > 20:
         return HttpResponse(simplejson.dumps([{'value': -1, 'label': "Liikaa tuloksia"}]))
 
     row = dbc.fetchone()
     results = []
-    while(row):
+    while row:
         results.append({'value': row[0], 'label': "%s - %s" % (row[1], row[2])})
         row = dbc.fetchone()
     results.append({'value': 0, 'label': u"Lisää oma"})
@@ -115,7 +115,7 @@ def suggest_cataloged(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect("/discdb/")
     inp = request.POST['input']
-    if(inp.isdigit() and len(inp) >= 8):
+    if inp.isdigit() and len(inp) >= 8:
         results_raw = Disc.get(barcode=inp, returned=False)
     else:
         results_raw = Disc.objects.filter(artist__icontains=inp, returned=False)
@@ -144,7 +144,7 @@ def lookup_cdid(request, cd_id):
     tracks = []
     dbc.execute("SELECT artist, title FROM discogs_tracks WHERE cd_id = %s", (cd_id,))
     row = dbc.fetchone()
-    while(row):
+    while row:
         tracks.append({'artist': row[0], 'title': row[1]})
         row = dbc.fetchone()
     entry = {'artist': cd[0], 'title': cd[1], 'barcode': cd[2], 'tracks': tracks}
@@ -174,13 +174,11 @@ def add_track(request):
         return HttpResponseRedirect("/discdb/")
     if request.method == "POST":
         track = TrackForm(request.POST)
-        if(track.is_valid()):
+        if track.is_valid():
             track = track.save()
             return HttpResponse(track.pk)
-        else:
-            return HttpResponse('{"error": "Form not valid"}')
-    else:
-        return HttpResponse('{"error": "Use POST"}')
+        return HttpResponse('{"error": "Form not valid"}')
+    return HttpResponse('{"error": "Use POST"}')
 
 
 def find_owner(formname):
@@ -195,7 +193,7 @@ def find_owner(formname):
 
 def login_view(request):
     c = {}
-    if(request.method == "POST"):
+    if request.method == "POST":
         username = request.POST['username']
         pw = request.POST['pw']
         user = authenticate(username=username, password=pw)
@@ -212,25 +210,25 @@ def search_view(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect("/discdb/")
     c = {}
-    if(request.method == "POST"):
+    if request.method == "POST":
         # Results-format: [{'name': name, 'url': url}]
         results = []
 
-        if('track' in request.POST):
+        if 'track' in request.POST:
             res = Track.objects.filter(name__icontains=request.POST['track'])
             for r in res:
                 name = r.artist + " - " + r.name + " (" + r.disc.name + ")"
                 url = "/discdb/show/" + str(r.disc.pk) + "/"
                 results.append({'name': name, 'url': url})
 
-        elif('artist' in request.POST):
+        elif 'artist' in request.POST:
             res = Disc.objects.filter(artist__icontains=request.POST['artist'])
             for r in res:
                 name = r.artist + " - " + r.name
                 url = "/discdb/show/" + str(r.pk) + "/"
                 results.append({'name': name, 'url': url})
 
-        elif('disc' in request.POST):
+        elif 'disc' in request.POST:
             res = Disc.objects.filter(artist__icontains=request.POST['disc'])
             for r in res:
                 name = r.artist + " - " + r.name
@@ -246,12 +244,12 @@ def wish(request):
         return HttpResponseRedirect("/discdb/")
     # TODO: Stub
     c = {}
-    if(request.method == "POST"):
+    if request.method == "POST":
         data = request.POST.copy()
-        if('wishsource' not in data):
+        if 'wishsource' not in data:
             data['source'] = request.META['REMOTE_ADDR']
         form = WishForm(data)
-        if(form.is_valid()):
+        if form.is_valid():
             c['added'] = True
             form.save()
     else:
@@ -268,7 +266,7 @@ def show_wishes(request):
     c['granted'] = list()
     c['not_granted'] = list()
     for wish in Wish.objects.all():
-        if(wish.track.find(" - ") > 0):
+        if wish.track.find(" - "):
             wish.discs = list()
             artist = wish.track.split(" - ")[0]
             track = wish.track.split(" - ")[1]
@@ -301,7 +299,7 @@ def grant_wish(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect("/discdb/")
     # TODO: Logincheck
-    if(request.method == "POST"):
+    if request.method == "POST":
         wishid = request.POST['wishid']
         wish = Wish.objects.get(pk=wishid)
         wish.done = True
@@ -313,8 +311,8 @@ def return_disc(request):
     if not request.user.is_authenticated():
         return HttpResponseRedirect("/discdb/")
     c = {}
-    if(request.method == "POST"):
-        if(request.POST['barcode']):
+    if request.method == "POST":
+        if request.POST['barcode']:
             d = Disc.objects.get(id=request.POST['barcode'])
             d.returned = True
             d.save()

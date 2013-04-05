@@ -1,4 +1,4 @@
-import simplejson
+import json
 import MySQLdb
 
 from django.conf import settings
@@ -32,7 +32,7 @@ class Barcode():
         return self._tracks
 
     def json(self):
-        return simplejson.dumps({'artist': self._artist, 'title': self._title, 'tracks': self._tracks})
+        return json.dumps({'artist': self._artist, 'title': self._title, 'tracks': self._tracks})
 
     def lookup_tracks(self, cd_id):
         print "Looking up tracks"
@@ -40,9 +40,9 @@ class Barcode():
             return
         db = MySQLdb.connect(settings.DISCOGS_SERVER, settings.DISCOGS_USERNAME, settings.DISCOGS_PASSWORD, settings.DISCOGS_DATABASE)
         dbc = db.cursor()
-        dbc.execute("""SELECT artist, title FROM discogs_tracks WHERE cd_id = %s""", (cd_id,))
+        dbc.execute("SELECT artist, title FROM discogs_tracks WHERE cd_id = %s", (cd_id,))
         row = dbc.fetchone()
-        while(row):
+        while row:
             self._tracks.append((row[0], row[1]))
             row = dbc.fetchone()
 
