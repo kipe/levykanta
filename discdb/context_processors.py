@@ -5,4 +5,3 @@ def header(request):
     else:
         stuff['user'] = None
     return stuff
-
